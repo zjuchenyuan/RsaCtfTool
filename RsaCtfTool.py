@@ -178,6 +178,32 @@ class RSAAttack(object):
 
         return
 
+    def primefac(self, primefac_timeout=60):
+        # this attack rely on primefac
+        try:
+            from primefac import primefac
+        except ImportError:
+            if self.args.verbose:
+                print "[*] Warning: primefac attack module missing"
+            return
+
+        # use primefac
+        try:
+            with timeout(seconds=primefac_timeout):   
+                result = list(primefac(self.pub_key.n))
+        except FactorizationError:
+            return
+            
+        if len(result) == 2:
+            self.pub_key.p = int(result[0])
+            self.pub_key.q = int(result[1])
+            self.priv_key = PrivateKey(long(self.pub_key.p), long(self.pub_key.q),
+                                       long(self.pub_key.e), long(self.pub_key.n))
+
+        return
+
+
+
     def ecm(self):
         # use elliptic curve method, may return a prime or may never return
         # only works if the sageworks() function returned True
@@ -398,7 +424,7 @@ class RSAAttack(object):
                 if self.args.uncipher is not None:
                     print "[-] Sorry, cracking failed"
 
-    implemented_attacks = [ nullattack, hastads, factordb, pastctfprimes, noveltyprimes, smallq, wiener, comfact_cn, fermat, siqs ]
+    implemented_attacks = [ nullattack, hastads, primefac, factordb, pastctfprimes, noveltyprimes, smallq, wiener, comfact_cn, fermat, siqs ]
 
 # source http://stackoverflow.com/a/22348885
 class timeout:
